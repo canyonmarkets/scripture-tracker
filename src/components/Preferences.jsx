@@ -23,6 +23,7 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
   const [notifPermission, setNotifPermission] = useState('default')
   const [notifEnabled, setNotifEnabled] = useState(() => localStorage.getItem('st_notifEnabled') === 'true')
   const [reminderTime, setReminderTime] = useState(() => localStorage.getItem('st_reminderTime') || '07:00')
+  const [syncStatus, setSyncStatus] = useState(null)
 
   useEffect(() => {
     if ('Notification' in window) setNotifPermission(Notification.permission)
@@ -35,7 +36,8 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
     if (perm === 'granted') {
       setNotifEnabled(true)
       localStorage.setItem('st_notifEnabled', 'true')
-      await syncScripturePushSubscription(reminderTime)
+      const status = await syncScripturePushSubscription(reminderTime)
+      setSyncStatus(status)
     }
   }
 
@@ -47,10 +49,12 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
       if (notifPermission !== 'granted') {
         await requestNotifications()
       } else {
-        await syncScripturePushSubscription(reminderTime)
+        const status = await syncScripturePushSubscription(reminderTime)
+        setSyncStatus(status)
       }
     } else {
       await removePushSubscription()
+      setSyncStatus('disabled')
     }
   }
 
@@ -58,7 +62,8 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
     setReminderTime(t)
     localStorage.setItem('st_reminderTime', t)
     if (notifEnabled && Notification.permission === 'granted') {
-      await syncScripturePushSubscription(t)
+      const status = await syncScripturePushSubscription(t)
+      setSyncStatus(status)
     }
   }
 
@@ -155,6 +160,11 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
 
         {notifPermission === 'denied' && (
           <p className="settings-note">Notifications are blocked. Enable them in your browser or phone settings.</p>
+        )}
+        {syncStatus && (
+          <p className="settings-note" style={{ color: syncStatus === 'ok' ? 'green' : 'orange' }}>
+            notif sync: {syncStatus}
+          </p>
         )}
         {notifEnabled && notifPermission === 'granted' && (
           <div className="reminder-time-row">

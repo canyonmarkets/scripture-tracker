@@ -16,16 +16,18 @@ function urlBase64ToUint8Array(base64String) {
  * Call this when the user enables notifications or changes their reminder time.
  */
 export async function syncScripturePushSubscription(reminderTime) {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  if (!SUPABASE_URL || !VAPID_PUBLIC_KEY) return;
-  if (!reminderTime) return;
+  if (!('serviceWorker' in navigator)) return 'no service worker';
+  if (!('PushManager' in window)) return 'no PushManager';
+  if (!SUPABASE_URL) return 'missing SUPABASE_URL';
+  if (!VAPID_PUBLIC_KEY) return 'missing VAPID_PUBLIC_KEY';
+  if (!reminderTime) return 'no reminder time';
 
   try {
     if (Notification.permission === 'default') {
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
+      if (perm !== 'granted') return 'permission denied';
     }
-    if (Notification.permission !== 'granted') return;
+    if (Notification.permission !== 'granted') return `permission: ${Notification.permission}`;
 
     const reg = await navigator.serviceWorker.ready;
 
@@ -40,7 +42,7 @@ export async function syncScripturePushSubscription(reminderTime) {
     const subJson = subscription.toJSON();
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    await supabase.from('push_subscriptions').upsert(
+    const { error } = await supabase.from('push_subscriptions').upsert(
       {
         app: 'scripture',
         endpoint: subJson.endpoint,
@@ -52,8 +54,11 @@ export async function syncScripturePushSubscription(reminderTime) {
       },
       { onConflict: 'endpoint' }
     );
+
+    if (error) return `supabase error: ${error.message}`;
+    return 'ok';
   } catch (err) {
-    console.error('[Scripture] Push subscription error:', err);
+    return `exception: ${err?.message ?? String(err)}`;
   }
 }
 
