@@ -21,6 +21,7 @@ export default function App() {
   const [readDays, setReadDays] = useStorage('st_readDays', {})
   const [notes, setNotes] = useStorage('st_notes', [])
   const [activePlanId, setActivePlanId] = useStorage('st_activePlan', null)
+  const [bookmarks, setBookmarks] = useStorage('st_bookmarks', {}) // { planId: { book, chapter, savedAt } }
 
   const [theme, setTheme] = useStorage('st_theme', 'light')
   const [fontSize, setFontSize] = useStorage('st_fontSize', 'md')
@@ -87,8 +88,16 @@ export default function App() {
     setTab('home')
   }
 
+  function saveBookmark(planId, book, chapter) {
+    setBookmarks(prev => ({
+      ...prev,
+      [planId]: { book, chapter, savedAt: new Date().toISOString() }
+    }))
+  }
+
   const activePlan = plans.find(p => p.id === activePlanId) || plans[0] || null
   const prefs = { theme, fontSize, fontFamily }
+  const activeBookmark = activePlan ? (bookmarks[activePlan.id] || null) : null
 
   // Compute today's assignment for the active plan so the Reader can track goal progress
   const todayAssignment = useMemo(() => {
@@ -111,7 +120,9 @@ export default function App() {
         prefs={prefs}
         todayAssignment={todayAssignment}
         planId={activePlan?.id || null}
+        bookmark={activeBookmark}
         onMarkRead={markTodayRead}
+        onBookmark={saveBookmark}
         onBack={() => setTab('home')}
       />
     )
@@ -144,6 +155,7 @@ export default function App() {
             activePlanId={activePlanId}
             setActivePlanId={setActivePlanId}
             readDays={readDays}
+            bookmark={activeBookmark}
             onMarkRead={markTodayRead}
             onOpenReader={openReader}
             onNewPlan={openNewPlan}

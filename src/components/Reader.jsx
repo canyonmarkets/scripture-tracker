@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react'
 import { SCRIPTURE_BOOKS } from '../data/scriptureIndex'
 
 const FONT_SIZE_MAP = { sm: '0.9rem', md: '1.05rem', lg: '1.25rem', xl: '1.5rem' }
@@ -20,18 +20,23 @@ function parseChapterRef(ref) {
   return { book, chapter: chNum }
 }
 
-export default function Reader({ scriptureId, book, chapter, prefs, todayAssignment, planId, onMarkRead, onBack }) {
+export default function Reader({ scriptureId, book, chapter, prefs, todayAssignment, planId, bookmark, onMarkRead, onBookmark, onBack }) {
   const { fontSize, fontFamily } = prefs
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [currentBook, setCurrentBook] = useState(book)
-  const [currentChapter, setCurrentChapter] = useState(chapter)
+  const [currentBook, setCurrentBook] = useState(startBook)
+  const [currentChapter, setCurrentChapter] = useState(startChapter)
   const [localFontSize, setLocalFontSize] = useState(fontSize)
   const [visitedRefs, setVisitedRefs] = useState(new Set())
   const [showCompletion, setShowCompletion] = useState(false)
   const [alreadyMarked, setAlreadyMarked] = useState(false)
+  const [bookmarkToast, setBookmarkToast] = useState(false) // show "Bookmarked ✓" briefly
   const contentRef = useRef(null)
+
+  // If a bookmark exists for this plan, start there instead of the passed-in chapter
+  const startBook    = bookmark?.book    || book
+  const startChapter = bookmark?.chapter || chapter
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
@@ -85,6 +90,14 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     setAlreadyMarked(true)
     setShowCompletion(false)
   }
+
+  function handleBookmark() {
+    if (planId && onBookmark) onBookmark(planId, currentBook, currentChapter)
+    setBookmarkToast(true)
+    setTimeout(() => setBookmarkToast(false), 2200)
+  }
+
+  const isCurrentlyBookmarked = bookmark?.book === currentBook && bookmark?.chapter === currentChapter
 
   if (loading) {
     return (
@@ -231,11 +244,29 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         <button className="nav-arrow" onClick={goPrev} disabled={bookIdx === 0 && currentChapter === 1}>
           <ChevronLeft size={20} /> Prev
         </button>
+
+        <button
+          className={`bookmark-btn ${isCurrentlyBookmarked ? 'bookmarked' : ''}`}
+          onClick={handleBookmark}
+          title="Save your place"
+        >
+          {isCurrentlyBookmarked
+            ? <BookmarkCheck size={20} />
+            : <Bookmark size={20} />}
+        </button>
+
         <span className="chapter-indicator">{chapterIdx + 1} / {totalChapters}</span>
         <button className="nav-arrow" onClick={goNext} disabled={bookIdx === books.length - 1 && currentChapter === totalChapters}>
           Next <ChevronRight size={20} />
         </button>
       </div>
+
+      {/* Bookmark toast */}
+      {bookmarkToast && (
+        <div className="bookmark-toast">
+          <BookmarkCheck size={15} /> Bookmark saved — you'll start here next time
+        </div>
+      )}
 
       {/* Completion overlay */}
       {showCompletion && (

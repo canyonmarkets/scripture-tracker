@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { SCRIPTURE_BOOKS, buildReadingPlan } from '../data/scriptureIndex'
-import { Flame, CheckCircle2, Circle, ChevronRight, Plus, TrendingUp } from 'lucide-react'
+import { Flame, CheckCircle2, Circle, ChevronRight, Plus, TrendingUp, Bookmark } from 'lucide-react'
 
 function getStreak(days) {
   if (!days || days.length === 0) return 0
@@ -31,7 +31,7 @@ function getDayOfPlan(plan) {
   return Math.floor((today - start) / 86400000)
 }
 
-export default function Home({ plans, activePlan, activePlanId, setActivePlanId, readDays, onMarkRead, onOpenReader, onNewPlan }) {
+export default function Home({ plans, activePlan, activePlanId, setActivePlanId, readDays, bookmark, onMarkRead, onOpenReader, onNewPlan }) {
   const today = getTodayKey()
 
   const planData = useMemo(() => {
@@ -118,6 +118,23 @@ export default function Home({ plans, activePlan, activePlanId, setActivePlanId,
           </div>
         </div>
       </div>
+
+      {/* Bookmark — continue where you left off */}
+      {bookmark && (
+        <button
+          className="card bookmark-continue-card"
+          onClick={() => onOpenReader(activePlan.scriptureId, bookmark.book, bookmark.chapter)}
+        >
+          <div className="bookmark-continue-left">
+            <Bookmark size={18} className="bookmark-continue-icon" />
+            <div>
+              <div className="bookmark-continue-label">Continue Reading</div>
+              <div className="bookmark-continue-ref">{bookmark.book} {bookmark.chapter}</div>
+            </div>
+          </div>
+          <ChevronRight size={18} className="bookmark-continue-arrow" />
+        </button>
+      )}
 
       {/* Today's reading */}
       <div className="card today-card">
