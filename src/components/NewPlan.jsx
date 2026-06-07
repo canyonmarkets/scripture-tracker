@@ -166,7 +166,7 @@ export default function NewPlan({ initialPlan, onSave, onCancel }) {
               <Calendar size={15} /> Set a Deadline
             </button>
             <button className={`mode-btn ${mode === 'time' ? 'selected' : ''}`} onClick={() => setMode('time')}>
-              <Clock size={15} /> Set Time Per Day
+              <Clock size={15} /> Set Reading Time
             </button>
           </div>
 
@@ -224,15 +224,18 @@ export default function NewPlan({ initialPlan, onSave, onCancel }) {
             </>
           ) : (
             <>
-              <label className="form-label" style={{ marginTop: '0.5rem' }}>Minutes per day</label>
+              <div className="time-mode-header">
+                <span className="form-label">How many minutes per day can you read?</span>
+              </div>
               <div className="minutes-grid">
                 {MINUTE_OPTIONS.map(m => (
                   <button
                     key={m}
-                    className={`duration-option ${minutesPerDay === m ? 'selected' : ''}`}
+                    className={`minutes-option ${minutesPerDay === m ? 'selected' : ''}`}
                     onClick={() => setMinutesPerDay(m)}
                   >
-                    {m} min
+                    <span className="min-number">{m}</span>
+                    <span className="min-label">min</span>
                   </button>
                 ))}
               </div>

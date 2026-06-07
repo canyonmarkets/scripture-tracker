@@ -1,18 +1,26 @@
-import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen } from 'lucide-react'
 import { SCRIPTURE_BOOKS } from '../data/scriptureIndex'
 
 const FONT_SIZE_MAP = { sm: '0.9rem', md: '1.05rem', lg: '1.25rem', xl: '1.5rem' }
 const FONT_SIZE_KEYS = ['sm', 'md', 'lg', 'xl']
 
 const FONT_FAMILY_MAP = {
-  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  serif: 'Georgia, "Times New Roman", serif',
+  system:   '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  serif:    'Georgia, "Times New Roman", serif',
   palatino: '"Palatino Linotype", Palatino, serif',
-  bookman: '"Book Antiqua", Palatino, serif',
+  bookman:  '"Book Antiqua", Palatino, serif',
 }
 
-export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
+// Parse "1 Nephi 3" → { book: "1 Nephi", chapter: 3 }
+function parseChapterRef(ref) {
+  const parts = ref.trim().split(' ')
+  const chNum = parseInt(parts[parts.length - 1])
+  const book = parts.slice(0, -1).join(' ')
+  return { book, chapter: chNum }
+}
+
+export default function Reader({ scriptureId, book, chapter, prefs, todayAssignment, planId, onMarkRead, onBack }) {
   const { fontSize, fontFamily } = prefs
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -20,6 +28,9 @@ export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
   const [currentBook, setCurrentBook] = useState(book)
   const [currentChapter, setCurrentChapter] = useState(chapter)
   const [localFontSize, setLocalFontSize] = useState(fontSize)
+  const [visitedRefs, setVisitedRefs] = useState(new Set())
+  const [showCompletion, setShowCompletion] = useState(false)
+  const [alreadyMarked, setAlreadyMarked] = useState(false)
   const contentRef = useRef(null)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
@@ -34,9 +45,46 @@ export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
       .catch(() => { setError('Failed to load scripture. Check your internet connection.'); setLoading(false) })
   }, [scriptureId])
 
+  // Parse today's assigned chapters into a structured list
+  const assignedChapters = useMemo(() => {
+    if (!todayAssignment?.chapters) return []
+    return todayAssignment.chapters.map(parseChapterRef)
+  }, [todayAssignment])
+
+  const totalAssignedVerses = todayAssignment?.verses || 0
+
+  // Track current chapter as visited
+  useEffect(() => {
+    if (!currentBook || !currentChapter) return
+    const ref = `${currentBook} ${currentChapter}`
+    setVisitedRefs(prev => {
+      if (prev.has(ref)) return prev
+      return new Set([...prev, ref])
+    })
+  }, [currentBook, currentChapter])
+
+  // Check if all assigned chapters have been visited
+  useEffect(() => {
+    if (assignedChapters.length === 0 || alreadyMarked) return
+    const allDone = assignedChapters.every(ac =>
+      visitedRefs.has(`${ac.book} ${ac.chapter}`)
+    )
+    if (allDone && visitedRefs.size > 0) {
+      // Small delay so they land on the last chapter first
+      const t = setTimeout(() => setShowCompletion(true), 600)
+      return () => clearTimeout(t)
+    }
+  }, [visitedRefs, assignedChapters, alreadyMarked])
+
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0)
   }, [currentBook, currentChapter])
+
+  function handleMarkRead() {
+    if (planId && onMarkRead) onMarkRead(planId)
+    setAlreadyMarked(true)
+    setShowCompletion(false)
+  }
 
   if (loading) {
     return (
@@ -85,6 +133,15 @@ export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
     }
   }
 
+  // Goal strip logic
+  const showGoalStrip = assignedChapters.length > 0
+  const completedCount = assignedChapters.filter(ac =>
+    visitedRefs.has(`${ac.book} ${ac.chapter}`)
+  ).length
+  const goalPct = assignedChapters.length > 0
+    ? Math.round((completedCount / assignedChapters.length) * 100)
+    : 0
+
   return (
     <div className="reader-shell">
       <header className="reader-header">
@@ -122,6 +179,36 @@ export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
         </div>
       </header>
 
+      {/* Today's Goal Strip */}
+      {showGoalStrip && (
+        <div className="goal-strip">
+          <div className="goal-strip-top">
+            <BookOpen size={12} className="goal-icon" />
+            <span className="goal-label">Today's reading</span>
+            <span className="goal-count">{completedCount} of {assignedChapters.length} chapters</span>
+          </div>
+          <div className="goal-bar">
+            <div className="goal-bar-fill" style={{ width: `${goalPct}%` }} />
+          </div>
+          <div className="goal-chapters">
+            {assignedChapters.map((ac, i) => {
+              const ref = `${ac.book} ${ac.chapter}`
+              const done = visitedRefs.has(ref)
+              const current = ac.book === currentBook && ac.chapter === currentChapter
+              return (
+                <span
+                  key={i}
+                  className={`goal-chip ${done ? 'done' : ''} ${current ? 'current' : ''}`}
+                >
+                  {done && <CheckCircle2 size={10} />}
+                  {ac.book.replace('1 ', '1 ').replace('2 ', '2 ').replace('3 ', '3 ')} {ac.chapter}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="reader-content" ref={contentRef}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
@@ -149,6 +236,40 @@ export default function Reader({ scriptureId, book, chapter, prefs, onBack }) {
           Next <ChevronRight size={20} />
         </button>
       </div>
+
+      {/* Completion overlay */}
+      {showCompletion && (
+        <div className="completion-overlay" onClick={() => setShowCompletion(false)}>
+          <div className="completion-card" onClick={e => e.stopPropagation()}>
+            <div className="completion-emoji">🎉</div>
+            <h2 className="completion-title">Today's Reading Complete!</h2>
+            <p className="completion-sub">
+              You read {assignedChapters.length} chapter{assignedChapters.length !== 1 ? 's' : ''} and
+              approximately {totalAssignedVerses} verses — great work!
+            </p>
+            <div className="completion-chapters">
+              {assignedChapters.map((ac, i) => (
+                <span key={i} className="completion-chip">
+                  <CheckCircle2 size={12} /> {ac.book} {ac.chapter}
+                </span>
+              ))}
+            </div>
+            {!alreadyMarked && (
+              <button className="completion-mark-btn" onClick={handleMarkRead}>
+                <CheckCircle2 size={18} /> Mark Today as Read
+              </button>
+            )}
+            {alreadyMarked && (
+              <div className="completion-marked">
+                <CheckCircle2 size={16} /> Day marked complete
+              </div>
+            )}
+            <button className="completion-continue-btn" onClick={() => setShowCompletion(false)}>
+              Keep Reading
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

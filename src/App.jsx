@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useStorage } from './hooks/useStorage'
 import Home from './components/Home'
 import Reader from './components/Reader'
@@ -8,6 +8,7 @@ import Preferences from './components/Preferences'
 import NewPlan from './components/NewPlan'
 import SplashScreen from './components/SplashScreen'
 import { BookOpen, BookText, List, BookMarked, Settings2 } from 'lucide-react'
+import { buildReadingPlan } from './data/scriptureIndex'
 import './index.css'
 
 export default function App() {
@@ -89,6 +90,18 @@ export default function App() {
   const activePlan = plans.find(p => p.id === activePlanId) || plans[0] || null
   const prefs = { theme, fontSize, fontFamily }
 
+  // Compute today's assignment for the active plan so the Reader can track goal progress
+  const todayAssignment = useMemo(() => {
+    if (!activePlan) return null
+    const start = new Date(activePlan.createdAt)
+    start.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dayIdx = Math.floor((today - start) / 86400000)
+    const plan = buildReadingPlan(activePlan.scriptureId, activePlan.totalDays)
+    return plan.days[Math.min(dayIdx, plan.days.length - 1)] || null
+  }, [activePlan])
+
   if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />
 
   if (tab === 'reader' && readerState) {
@@ -96,6 +109,9 @@ export default function App() {
       <Reader
         {...readerState}
         prefs={prefs}
+        todayAssignment={todayAssignment}
+        planId={activePlan?.id || null}
+        onMarkRead={markTodayRead}
         onBack={() => setTab('home')}
       />
     )
