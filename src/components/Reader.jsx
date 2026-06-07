@@ -25,6 +25,10 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // If a bookmark exists for this plan, start there instead of the passed-in chapter
+  const startBook    = bookmark?.book    || book
+  const startChapter = bookmark?.chapter || chapter
+
   const [currentBook, setCurrentBook] = useState(startBook)
   const [currentChapter, setCurrentChapter] = useState(startChapter)
   const [localFontSize, setLocalFontSize] = useState(fontSize)
@@ -33,10 +37,6 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [alreadyMarked, setAlreadyMarked] = useState(false)
   const [bookmarkToast, setBookmarkToast] = useState(false) // show "Bookmarked ✓" briefly
   const contentRef = useRef(null)
-
-  // If a bookmark exists for this plan, start there instead of the passed-in chapter
-  const startBook    = bookmark?.book    || book
-  const startChapter = bookmark?.chapter || chapter
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
