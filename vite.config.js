@@ -6,10 +6,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // injectManifest lets us use a custom SW with push notification support
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
+
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
 
-      // Full web app manifest
       manifest: {
         name: 'Scripture Tracker',
         short_name: 'Scriptures',
@@ -43,24 +50,6 @@ export default defineConfig({
         ],
       },
 
-      // Service worker — caches the app shell for offline use
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            // Cache scripture JSON fetched from GitHub CDN
-            urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'scripture-text',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 days
-              },
-            },
-          },
-        ],
-      },
     }),
   ],
 })

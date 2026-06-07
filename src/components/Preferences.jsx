@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Sun, Moon, Bell, BellOff, Type, AlignLeft } from 'lucide-react'
+import { syncScripturePushSubscription, removePushSubscription } from '../lib/pushSubscription'
 
 const FONT_FAMILIES = [
   { key: 'system', label: 'System', style: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
@@ -34,19 +35,31 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
     if (perm === 'granted') {
       setNotifEnabled(true)
       localStorage.setItem('st_notifEnabled', 'true')
+      await syncScripturePushSubscription(reminderTime)
     }
   }
 
-  function toggleNotif() {
+  async function toggleNotif() {
     const next = !notifEnabled
     setNotifEnabled(next)
     localStorage.setItem('st_notifEnabled', next.toString())
-    if (next && notifPermission !== 'granted') requestNotifications()
+    if (next) {
+      if (notifPermission !== 'granted') {
+        await requestNotifications()
+      } else {
+        await syncScripturePushSubscription(reminderTime)
+      }
+    } else {
+      await removePushSubscription()
+    }
   }
 
-  function saveReminderTime(t) {
+  async function saveReminderTime(t) {
     setReminderTime(t)
     localStorage.setItem('st_reminderTime', t)
+    if (notifEnabled && Notification.permission === 'granted') {
+      await syncScripturePushSubscription(t)
+    }
   }
 
   const currentFont = FONT_FAMILIES.find(f => f.key === fontFamily) || FONT_FAMILIES[0]
