@@ -140,10 +140,10 @@ export async function getChapterAudio(scriptureId, bookName, chapter) {
       return null
     }
 
-    // The API returns 2 entries: index 0 = female, index 1 = male (consistent across all chapters)
+    // The API returns 2 entries: index 0 = male, index 1 = female (consistent across all chapters)
     const result = {
-      female: audioArr[0]?.mediaUrl ?? null,
-      male:   audioArr[1]?.mediaUrl ?? audioArr[0]?.mediaUrl ?? null,
+      male:   audioArr[0]?.mediaUrl ?? null,
+      female: audioArr[1]?.mediaUrl ?? audioArr[0]?.mediaUrl ?? null,
     }
 
     audioCache.set(cacheKey, result)
