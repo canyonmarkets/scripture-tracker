@@ -166,7 +166,7 @@ export default function Preferences({ prefs, setTheme, setFontSize, setFontFamil
             notif sync: {syncStatus}
           </p>
         )}
-        {notifEnabled && notifPermission === 'granted' && (
+        {notifEnabled && (
           <div className="reminder-time-row">
             <label>Reminder time</label>
             <input
