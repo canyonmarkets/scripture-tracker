@@ -1065,6 +1065,83 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 .completion-continue-btn:hover { color: var(--text); }
 
+/* ===== Audio Player ===== */
+.audio-player {
+  background: var(--header-bg);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0.45rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.audio-voice-toggle {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.audio-voice-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.audio-voice-btn.active {
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.95);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.audio-play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.audio-play-btn:hover { background: rgba(255,255,255,0.28); }
+.audio-play-btn:disabled { opacity: 0.5; cursor: default; }
+
+.audio-progress-wrap {
+  flex: 1;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.audio-progress-track {
+  height: 3px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.audio-progress-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.85);
+  border-radius: 2px;
+  transition: width 0.25s linear;
+}
+
+.audio-time {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.55);
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .reader-content {
   flex: 1;
   overflow-y: auto;

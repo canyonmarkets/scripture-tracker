@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react'
 import { SCRIPTURE_BOOKS } from '../data/scriptureIndex'
+import AudioPlayer from './AudioPlayer'
 
 const FONT_SIZE_MAP = { sm: '0.9rem', md: '1.05rem', lg: '1.25rem', xl: '1.5rem' }
 const FONT_SIZE_KEYS = ['sm', 'md', 'lg', 'xl']
@@ -221,6 +222,12 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
           </div>
         </div>
       )}
+
+      <AudioPlayer
+        scriptureId={scriptureId}
+        bookName={currentBook}
+        chapter={currentChapter}
+      />
 
       <div className="reader-content" ref={contentRef}>
         <div className="reader-reference">{chapterObj?.reference}</div>
