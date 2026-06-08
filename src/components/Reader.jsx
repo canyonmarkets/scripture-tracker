@@ -213,11 +213,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   function handleTouchEnd(e, verseNum) {
     const duration = Date.now() - touchStartTime.current
     if (duration >= 500 && !touchMoved.current) {
-      // Lock the overlay for 400ms so Android's synthetic post-touch
-      // click doesn't immediately land on the overlay and close it
-      overlayLocked.current = true
-      setTimeout(() => { overlayLocked.current = false }, 400)
-      setActiveVerse(prev => prev === verseNum ? null : verseNum)
+      setActiveVerse(verseNum) // always set, never toggle — double-fire can't close it
       if (navigator.vibrate) navigator.vibrate(40)
     }
   }
@@ -331,15 +327,6 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         chapter={currentChapter}
       />
 
-      {/* Dismiss overlay — captures any tap outside the toolbar */}
-      {activeVerse !== null && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
-          onTouchEnd={e => { e.preventDefault(); if (!overlayLocked.current) setActiveVerse(null) }}
-          onClick={() => { if (!overlayLocked.current) setActiveVerse(null) }}
-        />
-      )}
-
       <div className="reader-content" ref={contentRef}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
@@ -383,7 +370,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
 
                 {/* Highlight toolbar */}
                 {isActive && (
-                  <div className="verse-toolbar" onClick={e => e.stopPropagation()}>
+                  <div className="verse-toolbar" onClick={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
                     {HIGHLIGHT_COLORS.map(c => (
                       <button
                         key={c.key}
@@ -409,6 +396,14 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                         <X size={14} />
                       </button>
                     )}
+                    {/* Explicit close — reliable on Android where tap-outside fails */}
+                    <button
+                      className="verse-clear-btn"
+                      onClick={() => setActiveVerse(null)}
+                      title="Close"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
                 )}
               </div>

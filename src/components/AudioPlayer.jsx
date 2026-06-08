@@ -18,16 +18,10 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef(null)
-  const fetchIdRef = useRef(0)
 
   // Fetch audio URLs when chapter changes
   useEffect(() => {
-    fetchAudio()
-  }, [scriptureId, bookName, chapter])
-
-  function fetchAudio() {
-    // Increment the fetch ID — only the result matching the current ID will be applied
-    const myFetchId = ++fetchIdRef.current
+    let cancelled = false
 
     setLoading(true)
     setUnavailable(false)
@@ -36,20 +30,29 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
     setCurrentTime(0)
     setDuration(0)
 
-    // Reset the audio element so it doesn't hold the previous chapter's src
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.src = ''
     }
 
     getChapterAudio(scriptureId, bookName, chapter).then(result => {
-      // If a newer fetch has started (chapter changed), discard this result
-      if (myFetchId !== fetchIdRef.current) return
+      if (cancelled) return
       if (!result) {
         setUnavailable(true)
       } else {
         setUrls(result)
       }
+      setLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [scriptureId, bookName, chapter])
+
+  function fetchAudio() {
+    setLoading(true)
+    setUnavailable(false)
+    getChapterAudio(scriptureId, bookName, chapter).then(result => {
+      if (!result) { setUnavailable(true) } else { setUrls(result) }
       setLoading(false)
     })
   }
