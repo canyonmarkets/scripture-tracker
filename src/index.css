@@ -1477,13 +1477,15 @@ input, textarea { font-family: inherit; color: inherit; }
 /* ── Verse highlights & notes ─────────────────────────────── */
 .verse-block { position: relative; }
 
+.reader-verses {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .verse {
   cursor: pointer;
   transition: background 0.15s;
   border-radius: 4px;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
 }
 .verse:active { opacity: 0.85; }
 

@@ -304,12 +304,13 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                 <p
                   className={`verse ${hi ? 'highlighted' : ''}`}
                   style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
-                  onTouchStart={() => startLongPress(v.verse)}
+                  onTouchStart={e => { e.preventDefault(); startLongPress(v.verse) }}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onMouseDown={() => startLongPress(v.verse)}
                   onMouseUp={cancelLongPress}
                   onMouseLeave={cancelLongPress}
+                  onContextMenu={e => e.preventDefault()}
                 >
                   <sup className="verse-num">{v.verse}</sup>
                   {v.text}
