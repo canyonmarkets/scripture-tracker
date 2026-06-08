@@ -1513,6 +1513,8 @@ input, textarea { font-family: inherit; color: inherit; }
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
   margin: 4px 0 6px 0;
+  position: relative;
+  z-index: 51;
   width: fit-content;
 }
 

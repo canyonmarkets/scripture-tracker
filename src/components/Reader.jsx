@@ -212,7 +212,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   function handleTouchEnd(e, verseNum) {
     const duration = Date.now() - touchStartTime.current
     if (duration >= 500 && !touchMoved.current) {
-      longPressJustFired.current = true
+      e.preventDefault() // stop the synthesized click from firing
       setActiveVerse(prev => prev === verseNum ? null : verseNum)
       if (navigator.vibrate) navigator.vibrate(40)
     }
@@ -327,10 +327,16 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         chapter={currentChapter}
       />
 
-      <div className="reader-content" ref={contentRef} onClick={() => {
-        if (longPressJustFired.current) { longPressJustFired.current = false; return }
-        setActiveVerse(null)
-      }}>
+      {/* Dismiss overlay — captures any tap outside the toolbar */}
+      {activeVerse !== null && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
+          onTouchEnd={e => { e.preventDefault(); setActiveVerse(null) }}
+          onClick={() => setActiveVerse(null)}
+        />
+      )}
+
+      <div className="reader-content" ref={contentRef}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
           className="reader-verses"
