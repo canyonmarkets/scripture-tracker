@@ -1,8 +1,12 @@
-// v2
+// v3
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
+
+// Take over immediately when a new SW is installed — don't wait for old tabs to close
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
