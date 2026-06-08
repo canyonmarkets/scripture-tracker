@@ -304,7 +304,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                 <p
                   className={`verse ${hi ? 'highlighted' : ''}`}
                   style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
-                  onTouchStart={e => { e.preventDefault(); startLongPress(v.verse) }}
+                  onTouchStart={() => startLongPress(v.verse)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onMouseDown={() => startLongPress(v.verse)}
