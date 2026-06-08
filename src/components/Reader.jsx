@@ -46,6 +46,9 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const longPressTimer = useRef(null)
   const longPressVerse = useRef(null)
   const longPressJustFired = useRef(false)
+  const touchStartTime = useRef(0)
+  const touchStartPos = useRef({ x: 0, y: 0 })
+  const touchMoved = useRef(false)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
@@ -174,6 +177,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     { key: 'pink',   label: 'Pink',   bg: '#F48FB1', text: '#3a0a18' },
   ]
 
+  // ── Mouse long press (desktop) ──────────────────────────────
   function startLongPress(verseNum) {
     longPressVerse.current = verseNum
     longPressJustFired.current = false
@@ -187,6 +191,31 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   function cancelLongPress() {
     clearTimeout(longPressTimer.current)
     longPressVerse.current = null
+  }
+
+  // ── Touch long press (mobile) ────────────────────────────────
+  // Detect on touchend so the toolbar opens AFTER finger lifts —
+  // avoids Android's unpredictable post-touch synthetic events closing it.
+  function handleTouchStart(e, verseNum) {
+    touchStartTime.current = Date.now()
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    touchMoved.current = false
+    longPressVerse.current = verseNum
+  }
+
+  function handleTouchMove(e) {
+    const dx = e.touches[0].clientX - touchStartPos.current.x
+    const dy = e.touches[0].clientY - touchStartPos.current.y
+    if (Math.sqrt(dx * dx + dy * dy) > 10) touchMoved.current = true
+  }
+
+  function handleTouchEnd(e, verseNum) {
+    const duration = Date.now() - touchStartTime.current
+    if (duration >= 500 && !touchMoved.current) {
+      longPressJustFired.current = true
+      setActiveVerse(prev => prev === verseNum ? null : verseNum)
+      if (navigator.vibrate) navigator.vibrate(40)
+    }
   }
 
   function applyHighlight(verseNum, color) {
@@ -322,9 +351,9 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                 <p
                   className={`verse ${hi ? 'highlighted' : ''}`}
                   style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
-                  onTouchStart={() => startLongPress(v.verse)}
-                  onTouchEnd={cancelLongPress}
-                  onTouchMove={cancelLongPress}
+                  onTouchStart={e => handleTouchStart(e, v.verse)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={e => handleTouchEnd(e, v.verse)}
                   onMouseDown={() => startLongPress(v.verse)}
                   onMouseUp={cancelLongPress}
                   onMouseLeave={cancelLongPress}
