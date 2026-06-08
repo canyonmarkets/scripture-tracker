@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, Loader2 } from 'lucide-react'
-import { getChapterAudio } from '../lib/churchAudio'
+import { getChapterAudio, clearAudioCache } from '../lib/churchAudio'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2]
 
@@ -21,6 +21,10 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
 
   // Fetch audio URLs when chapter changes
   useEffect(() => {
+    fetchAudio()
+  }, [scriptureId, bookName, chapter])
+
+  function fetchAudio() {
     setLoading(true)
     setUnavailable(false)
     setPlaying(false)
@@ -42,7 +46,7 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
       }
       setLoading(false)
     })
-  }, [scriptureId, bookName, chapter])
+  }
 
   // Apply speed to audio element whenever it changes
   useEffect(() => {
@@ -142,7 +146,23 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
     return `${m}:${s}`
   }
 
-  if (unavailable) return null
+  if (unavailable) return (
+    <div className="audio-player" style={{ justifyContent: 'center' }}>
+      <button
+        className="audio-play-btn"
+        onClick={() => {
+          clearAudioCache(scriptureId, bookName, chapter)
+          fetchAudio()
+        }}
+        title="Retry loading audio"
+      >
+        <Loader2 size={18} />
+      </button>
+      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #888)', marginLeft: '0.5rem' }}>
+        Audio unavailable — tap to retry
+      </span>
+    </div>
+  )
 
   return (
     <div className="audio-player">

@@ -115,6 +115,14 @@ const audioCache = new Map()
  * @param {string} bookName    - e.g. '1 Nephi', 'Genesis'
  * @param {number} chapter     - chapter number
  */
+export function clearAudioCache(scriptureId, bookName, chapter) {
+  const bookSlug = BOOK_SLUGS[bookName]
+  const pathPrefix = SCRIPTURE_PATH[scriptureId]
+  if (bookSlug && pathPrefix) {
+    audioCache.delete(`/scriptures/${pathPrefix}/${bookSlug}/${chapter}`)
+  }
+}
+
 export async function getChapterAudio(scriptureId, bookName, chapter) {
   const bookSlug = BOOK_SLUGS[bookName]
   if (!bookSlug) return null
