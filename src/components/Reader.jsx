@@ -43,6 +43,8 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [activeVerse, setActiveVerse] = useState(null) // verseNum with toolbar open
   const [noteVerse, setNoteVerse] = useState(null)     // verseNum with note modal open
   const contentRef = useRef(null)
+  const longPressTimer = useRef(null)
+  const longPressVerse = useRef(null)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
@@ -161,8 +163,18 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     { key: 'pink',   label: 'Pink',   bg: '#F48FB1', text: '#3a0a18' },
   ]
 
-  function handleVerseClick(verseNum) {
-    setActiveVerse(prev => prev === verseNum ? null : verseNum)
+  function startLongPress(verseNum) {
+    longPressVerse.current = verseNum
+    longPressTimer.current = setTimeout(() => {
+      setActiveVerse(prev => prev === verseNum ? null : verseNum)
+      // Gentle haptic feedback on supported devices
+      if (navigator.vibrate) navigator.vibrate(40)
+    }, 500)
+  }
+
+  function cancelLongPress() {
+    clearTimeout(longPressTimer.current)
+    longPressVerse.current = null
   }
 
   function applyHighlight(verseNum, color) {
@@ -274,7 +286,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         chapter={currentChapter}
       />
 
-      <div className="reader-content" ref={contentRef} onClick={() => setActiveVerse(null)}>
+      <div className="reader-content" ref={contentRef} onClick={() => { setActiveVerse(null) }}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
           className="reader-verses"
@@ -292,7 +304,12 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                 <p
                   className={`verse ${hi ? 'highlighted' : ''}`}
                   style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
-                  onClick={() => handleVerseClick(v.verse)}
+                  onTouchStart={() => startLongPress(v.verse)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onMouseDown={() => startLongPress(v.verse)}
+                  onMouseUp={cancelLongPress}
+                  onMouseLeave={cancelLongPress}
                 >
                   <sup className="verse-num">{v.verse}</sup>
                   {v.text}
