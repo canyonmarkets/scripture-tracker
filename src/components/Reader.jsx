@@ -95,6 +95,16 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
   }, [currentBook, currentChapter])
 
+  // Block Android's native context menu using a direct DOM listener (passive: false)
+  // React synthetic onContextMenu fires too late — browser shows menu before React can preventDefault
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const block = (e) => e.preventDefault()
+    el.addEventListener('contextmenu', block, { passive: false })
+    return () => el.removeEventListener('contextmenu', block)
+  }, [])
+
   function handleMarkRead() {
     if (planId && onMarkRead) onMarkRead(planId)
     setAlreadyMarked(true)
@@ -310,7 +320,6 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                   onMouseDown={() => startLongPress(v.verse)}
                   onMouseUp={cancelLongPress}
                   onMouseLeave={cancelLongPress}
-                  onContextMenu={e => e.preventDefault()}
                 >
                   <sup className="verse-num">{v.verse}</sup>
                   {v.text}
