@@ -28,6 +28,12 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
     setCurrentTime(0)
     setDuration(0)
 
+    // Reset the audio element so it doesn't hold the previous chapter's src
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+
     getChapterAudio(scriptureId, bookName, chapter).then(result => {
       if (!result) {
         setUnavailable(true)
@@ -66,6 +72,7 @@ export default function AudioPlayer({ scriptureId, bookName, chapter }) {
     } else {
       if (!audio.src || audio.src === window.location.href) {
         audio.src = urls[voice]
+        audio.load()
         audio.playbackRate = speed
       }
       // Restore saved position if any
