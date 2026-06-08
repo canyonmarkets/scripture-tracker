@@ -45,6 +45,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const contentRef = useRef(null)
   const longPressTimer = useRef(null)
   const longPressVerse = useRef(null)
+  const longPressJustFired = useRef(false)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
@@ -175,9 +176,10 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
 
   function startLongPress(verseNum) {
     longPressVerse.current = verseNum
+    longPressJustFired.current = false
     longPressTimer.current = setTimeout(() => {
+      longPressJustFired.current = true
       setActiveVerse(prev => prev === verseNum ? null : verseNum)
-      // Gentle haptic feedback on supported devices
       if (navigator.vibrate) navigator.vibrate(40)
     }, 500)
   }
@@ -296,13 +298,19 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         chapter={currentChapter}
       />
 
-      <div className="reader-content" ref={contentRef} onClick={() => { setActiveVerse(null) }}>
+      <div className="reader-content" ref={contentRef} onClick={() => {
+        if (longPressJustFired.current) { longPressJustFired.current = false; return }
+        setActiveVerse(null)
+      }}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
           className="reader-verses"
           style={{
             fontSize: FONT_SIZE_MAP[localFontSize],
             fontFamily: FONT_FAMILY_MAP[fontFamily] || FONT_FAMILY_MAP.system,
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
           }}
         >
           {chapterObj?.verses?.map(v => {
