@@ -1475,7 +1475,8 @@ input, textarea { font-family: inherit; color: inherit; }
 .about-version { font-size: 0.75rem; color: var(--border); margin-top: 0.5rem; }
 
 /* ── Verse highlights & notes ─────────────────────────────── */
-.verse-block { position: relative; }
+.verse-block { position: relative; padding-top: 0; }
+.verse-block:has(.verse-toolbar) { padding-top: 44px; }
 
 .reader-verses {
   -webkit-user-select: none;
@@ -1502,7 +1503,7 @@ input, textarea { font-family: inherit; color: inherit; }
   opacity: 0.75;
 }
 
-/* Highlight toolbar (appears below tapped verse) */
+/* Highlight toolbar — absolutely positioned at top of verse block */
 .verse-toolbar {
   display: flex;
   align-items: center;
@@ -1512,8 +1513,9 @@ input, textarea { font-family: inherit; color: inherit; }
   border: 1px solid var(--border-soft);
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-  margin: 4px 0 6px 0;
-  position: relative;
+  position: absolute;
+  top: 2px;
+  left: 0;
   z-index: 51;
   width: fit-content;
 }
