@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck, MessageSquare, X } from 'lucide-react'
 import { SCRIPTURE_BOOKS } from '../data/scriptureIndex'
 import AudioPlayer from './AudioPlayer'
+import NoteModal from './NoteModal'
+import { getHighlights, setHighlight, updateNote, clearHighlight } from '../lib/highlights'
 
 const FONT_SIZE_MAP = { sm: '0.9rem', md: '1.05rem', lg: '1.25rem', xl: '1.5rem' }
 const FONT_SIZE_KEYS = ['sm', 'md', 'lg', 'xl']
@@ -37,6 +39,9 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [showCompletion, setShowCompletion] = useState(false)
   const [alreadyMarked, setAlreadyMarked] = useState(false)
   const [bookmarkToast, setBookmarkToast] = useState(false) // show "Bookmarked ✓" briefly
+  const [highlights, setHighlights] = useState({})
+  const [activeVerse, setActiveVerse] = useState(null) // verseNum with toolbar open
+  const [noteVerse, setNoteVerse] = useState(null)     // verseNum with note modal open
   const contentRef = useRef(null)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
@@ -84,6 +89,8 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
 
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0)
+    setActiveVerse(null)
+    setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
   }, [currentBook, currentChapter])
 
   function handleMarkRead() {
@@ -145,6 +152,44 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
       setCurrentBook(prevBook.book)
       setCurrentChapter(prevBook.chapters.length)
     }
+  }
+
+  const HIGHLIGHT_COLORS = [
+    { key: 'yellow', label: 'Yellow', bg: '#FFF176', text: '#333' },
+    { key: 'green',  label: 'Green',  bg: '#A5D6A7', text: '#1a3a1a' },
+    { key: 'blue',   label: 'Blue',   bg: '#90CAF9', text: '#0d2a4a' },
+    { key: 'pink',   label: 'Pink',   bg: '#F48FB1', text: '#3a0a18' },
+  ]
+
+  function handleVerseClick(verseNum) {
+    setActiveVerse(prev => prev === verseNum ? null : verseNum)
+  }
+
+  function applyHighlight(verseNum, color) {
+    const existing = highlights[verseNum]
+    const note = existing?.note || ''
+    setHighlight(scriptureId, currentBook, currentChapter, verseNum, color, note)
+    setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
+    setActiveVerse(null)
+  }
+
+  function handleClearHighlight(verseNum) {
+    clearHighlight(scriptureId, currentBook, currentChapter, verseNum)
+    setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
+    setActiveVerse(null)
+  }
+
+  function handleSaveNote(verseNum, text) {
+    updateNote(scriptureId, currentBook, currentChapter, verseNum, text)
+    setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
+  }
+
+  function handleDeleteNote(verseNum) {
+    const h = highlights[verseNum]
+    if (h) {
+      setHighlight(scriptureId, currentBook, currentChapter, verseNum, h.color, '')
+    }
+    setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
   }
 
   // Goal strip logic
@@ -229,7 +274,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         chapter={currentChapter}
       />
 
-      <div className="reader-content" ref={contentRef}>
+      <div className="reader-content" ref={contentRef} onClick={() => setActiveVerse(null)}>
         <div className="reader-reference">{chapterObj?.reference}</div>
         <div
           className="reader-verses"
@@ -238,12 +283,63 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
             fontFamily: FONT_FAMILY_MAP[fontFamily] || FONT_FAMILY_MAP.system,
           }}
         >
-          {chapterObj?.verses?.map(v => (
-            <p key={v.verse} className="verse">
-              <sup className="verse-num">{v.verse}</sup>
-              {v.text}
-            </p>
-          ))}
+          {chapterObj?.verses?.map(v => {
+            const hi = highlights[v.verse]
+            const isActive = activeVerse === v.verse
+            const colorMeta = HIGHLIGHT_COLORS.find(c => c.key === hi?.color)
+            return (
+              <div key={v.verse} className="verse-block">
+                <p
+                  className={`verse ${hi ? 'highlighted' : ''}`}
+                  style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
+                  onClick={() => handleVerseClick(v.verse)}
+                >
+                  <sup className="verse-num">{v.verse}</sup>
+                  {v.text}
+                  {hi?.note ? (
+                    <button
+                      className="verse-note-indicator"
+                      onClick={e => { e.stopPropagation(); setNoteVerse(v.verse) }}
+                      title="View note"
+                    >
+                      <MessageSquare size={13} />
+                    </button>
+                  ) : null}
+                </p>
+
+                {/* Highlight toolbar */}
+                {isActive && (
+                  <div className="verse-toolbar" onClick={e => e.stopPropagation()}>
+                    {HIGHLIGHT_COLORS.map(c => (
+                      <button
+                        key={c.key}
+                        className={`verse-color-btn ${hi?.color === c.key ? 'active' : ''}`}
+                        style={{ background: c.bg }}
+                        onClick={() => applyHighlight(v.verse, c.key)}
+                        title={c.label}
+                      />
+                    ))}
+                    <button
+                      className="verse-note-btn"
+                      onClick={() => { setNoteVerse(v.verse); setActiveVerse(null) }}
+                      title="Add note"
+                    >
+                      <MessageSquare size={14} />
+                    </button>
+                    {hi && (
+                      <button
+                        className="verse-clear-btn"
+                        onClick={() => handleClearHighlight(v.verse)}
+                        title="Remove highlight"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -267,6 +363,18 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
           Next <ChevronRight size={20} />
         </button>
       </div>
+
+      {/* Note modal */}
+      {noteVerse !== null && (
+        <NoteModal
+          verseNum={noteVerse}
+          verseText={chapterObj?.verses?.find(v => v.verse === noteVerse)?.text || ''}
+          existingNote={highlights[noteVerse]?.note || ''}
+          onSave={text => handleSaveNote(noteVerse, text)}
+          onDelete={() => handleDeleteNote(noteVerse)}
+          onClose={() => setNoteVerse(null)}
+        />
+      )}
 
       {/* Bookmark toast */}
       {bookmarkToast && (
