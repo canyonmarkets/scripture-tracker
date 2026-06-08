@@ -136,22 +136,18 @@ export async function getChapterAudio(scriptureId, bookName, chapter) {
   if (audioCache.has(cacheKey)) return audioCache.get(cacheKey)
 
   try {
-    const url = `https://www.churchofjesuschrist.org/study/api/v3/language-pages/type/content?lang=eng&uri=${uri}`
-    const res = await fetch(url)
-    if (!res.ok) return null
-
-    const json = await res.json()
-    const audioArr = json?.meta?.audio
-
-    if (!audioArr || audioArr.length === 0) {
+    // Use our Netlify proxy to avoid CORS issues fetching the Church API from the browser
+    const proxyUrl = `/.netlify/functions/audio-urls?uri=${uri}`
+    const res = await fetch(proxyUrl)
+    if (!res.ok) {
       audioCache.set(cacheKey, null)
       return null
     }
 
-    // The API returns 2 entries: index 0 = male, index 1 = female (consistent across all chapters)
-    const result = {
-      male:   audioArr[0]?.mediaUrl ?? null,
-      female: audioArr[1]?.mediaUrl ?? audioArr[0]?.mediaUrl ?? null,
+    const result = await res.json()
+    if (!result.male && !result.female) {
+      audioCache.set(cacheKey, null)
+      return null
     }
 
     audioCache.set(cacheKey, result)
