@@ -49,6 +49,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const touchStartTime = useRef(0)
   const touchStartPos = useRef({ x: 0, y: 0 })
   const touchMoved = useRef(false)
+  const overlayLocked = useRef(false)
 
   const scripture = SCRIPTURE_BOOKS.find(s => s.id === scriptureId)
 
@@ -212,7 +213,10 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   function handleTouchEnd(e, verseNum) {
     const duration = Date.now() - touchStartTime.current
     if (duration >= 500 && !touchMoved.current) {
-      e.preventDefault() // stop the synthesized click from firing
+      // Lock the overlay for 400ms so Android's synthetic post-touch
+      // click doesn't immediately land on the overlay and close it
+      overlayLocked.current = true
+      setTimeout(() => { overlayLocked.current = false }, 400)
       setActiveVerse(prev => prev === verseNum ? null : verseNum)
       if (navigator.vibrate) navigator.vibrate(40)
     }
@@ -331,8 +335,8 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
       {activeVerse !== null && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 50 }}
-          onTouchEnd={e => { e.preventDefault(); setActiveVerse(null) }}
-          onClick={() => setActiveVerse(null)}
+          onTouchEnd={e => { e.preventDefault(); if (!overlayLocked.current) setActiveVerse(null) }}
+          onClick={() => { if (!overlayLocked.current) setActiveVerse(null) }}
         />
       )}
 
