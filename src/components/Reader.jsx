@@ -184,7 +184,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     longPressJustFired.current = false
     longPressTimer.current = setTimeout(() => {
       longPressJustFired.current = true
-      setActiveVerse(prev => prev === verseNum ? null : verseNum)
+      setActiveVerse(verseNum) // always set, never toggle — touch path already handles open→close
       if (navigator.vibrate) navigator.vibrate(40)
     }, 500)
   }
@@ -213,7 +213,12 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   function handleTouchEnd(e, verseNum) {
     const duration = Date.now() - touchStartTime.current
     if (duration >= 500 && !touchMoved.current) {
-      setActiveVerse(verseNum) // always set, never toggle — double-fire can't close it
+      // Cancel any mouse compatibility timer Android fires after a touch long press
+      // (Android fires mousedown but NOT mouseup for long presses, so without this
+      //  the startLongPress timer would fire 500ms later and toggle activeVerse closed)
+      clearTimeout(longPressTimer.current)
+      longPressVerse.current = null
+      setActiveVerse(verseNum)
       if (navigator.vibrate) navigator.vibrate(40)
     }
   }
