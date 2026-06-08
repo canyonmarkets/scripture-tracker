@@ -350,30 +350,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
             const colorMeta = HIGHLIGHT_COLORS.find(c => c.key === hi?.color)
             return (
               <div key={v.verse} className="verse-block">
-                <p
-                  className={`verse ${hi ? 'highlighted' : ''}`}
-                  style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
-                  onTouchStart={e => handleTouchStart(e, v.verse)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={e => handleTouchEnd(e, v.verse)}
-                  onMouseDown={() => startLongPress(v.verse)}
-                  onMouseUp={cancelLongPress}
-                  onMouseLeave={cancelLongPress}
-                >
-                  <sup className="verse-num">{v.verse}</sup>
-                  {v.text}
-                  {hi?.note ? (
-                    <button
-                      className="verse-note-indicator"
-                      onClick={e => { e.stopPropagation(); setNoteVerse(v.verse) }}
-                      title="View note"
-                    >
-                      <MessageSquare size={13} />
-                    </button>
-                  ) : null}
-                </p>
-
-                {/* Highlight toolbar */}
+                {/* Highlight toolbar — rendered ABOVE the verse so it's visible without scrolling */}
                 {isActive && (
                   <div className="verse-toolbar" onClick={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
                     {HIGHLIGHT_COLORS.map(c => (
@@ -411,6 +388,29 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
                     </button>
                   </div>
                 )}
+
+                <p
+                  className={`verse ${hi ? 'highlighted' : ''}`}
+                  style={hi ? { background: colorMeta?.bg, color: colorMeta?.text, borderRadius: '4px', padding: '2px 4px', margin: '0 -4px' } : {}}
+                  onTouchStart={e => handleTouchStart(e, v.verse)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={e => handleTouchEnd(e, v.verse)}
+                  onMouseDown={() => startLongPress(v.verse)}
+                  onMouseUp={cancelLongPress}
+                  onMouseLeave={cancelLongPress}
+                >
+                  <sup className="verse-num">{v.verse}</sup>
+                  {v.text}
+                  {hi?.note ? (
+                    <button
+                      className="verse-note-indicator"
+                      onClick={e => { e.stopPropagation(); setNoteVerse(v.verse) }}
+                      title="View note"
+                    >
+                      <MessageSquare size={13} />
+                    </button>
+                  ) : null}
+                </p>
               </div>
             )
           })}
