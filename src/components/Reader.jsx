@@ -43,7 +43,7 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [activeVerse, setActiveVerse] = useState(null) // verseNum with toolbar open
   const [noteVerse, setNoteVerse] = useState(null)     // verseNum with note modal open
   const [autoScroll, setAutoScroll] = useState(false)
-  const [scrollSpeed, setScrollSpeed] = useState(() => parseFloat(localStorage.getItem('st_scrollSpeed') || '1'))
+  const [scrollSpeed, setScrollSpeed] = useState(() => parseFloat(localStorage.getItem('st_scrollSpeed') || '1.0'))
   const contentRef = useRef(null)
   const autoScrollRaf = useRef(null)
   const lastScrollTime = useRef(null)
@@ -389,14 +389,14 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         <div className="autoscroll-speed-control">
           <button
             className="autoscroll-step-btn"
-            onClick={() => handleScrollSpeedChange(Math.max(0.25, scrollSpeed - 0.25).toString())}
-            disabled={scrollSpeed <= 0.25}
+            onClick={() => handleScrollSpeedChange(Math.max(0.1, parseFloat((scrollSpeed - 0.1).toFixed(1))).toString())}
+            disabled={scrollSpeed <= 0.1}
             title="Slower"
           >−</button>
           <span className="autoscroll-speed">{scrollSpeed.toFixed(2)}×</span>
           <button
             className="autoscroll-step-btn"
-            onClick={() => handleScrollSpeedChange(Math.min(4, scrollSpeed + 0.25).toString())}
+            onClick={() => handleScrollSpeedChange(Math.min(4, parseFloat((scrollSpeed + 0.1).toFixed(1))).toString())}
             disabled={scrollSpeed >= 4}
             title="Faster"
           >+</button>
