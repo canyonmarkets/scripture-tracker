@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck, MessageSquare, X } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Loader2, CheckCircle2, BookOpen, Bookmark, BookmarkCheck, MessageSquare, X, ScrollText } from 'lucide-react'
 import { SCRIPTURE_BOOKS } from '../data/scriptureIndex'
 import AudioPlayer from './AudioPlayer'
 import NoteModal from './NoteModal'
@@ -42,7 +42,11 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
   const [highlights, setHighlights] = useState({})
   const [activeVerse, setActiveVerse] = useState(null) // verseNum with toolbar open
   const [noteVerse, setNoteVerse] = useState(null)     // verseNum with note modal open
+  const [autoScroll, setAutoScroll] = useState(false)
+  const [scrollSpeed, setScrollSpeed] = useState(() => parseFloat(localStorage.getItem('st_scrollSpeed') || '1'))
   const contentRef = useRef(null)
+  const autoScrollRaf = useRef(null)
+  const lastScrollTime = useRef(null)
   const longPressTimer = useRef(null)
   const longPressVerse = useRef(null)
   const longPressJustFired = useRef(false)
@@ -100,6 +104,40 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     setHighlights(getHighlights(scriptureId, currentBook, currentChapter))
   }, [currentBook, currentChapter])
 
+  // Auto-scroll RAF loop
+  useEffect(() => {
+    if (!autoScroll) {
+      cancelAnimationFrame(autoScrollRaf.current)
+      lastScrollTime.current = null
+      return
+    }
+    function tick(ts) {
+      if (lastScrollTime.current === null) lastScrollTime.current = ts
+      const elapsed = ts - lastScrollTime.current
+      lastScrollTime.current = ts
+      const el = contentRef.current
+      if (el) {
+        // scrollSpeed 1 = ~30px/sec, range 0.25–4 = ~7.5–120px/sec
+        const pxPerMs = (scrollSpeed * 30) / 1000
+        el.scrollTop += pxPerMs * elapsed
+        // Stop at bottom
+        if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
+          setAutoScroll(false)
+          return
+        }
+      }
+      autoScrollRaf.current = requestAnimationFrame(tick)
+    }
+    autoScrollRaf.current = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(autoScrollRaf.current)
+      lastScrollTime.current = null
+    }
+  }, [autoScroll, scrollSpeed])
+
+  // Stop auto-scroll when chapter changes
+  useEffect(() => { setAutoScroll(false) }, [currentBook, currentChapter])
+
   // Block Android's native context menu using a direct DOM listener (passive: false)
   // React synthetic onContextMenu fires too late — browser shows menu before React can preventDefault
   useEffect(() => {
@@ -109,6 +147,12 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
     el.addEventListener('contextmenu', block, { passive: false })
     return () => el.removeEventListener('contextmenu', block)
   }, [])
+
+  function handleScrollSpeedChange(val) {
+    const v = parseFloat(val)
+    setScrollSpeed(v)
+    localStorage.setItem('st_scrollSpeed', String(v))
+  }
 
   function handleMarkRead() {
     if (planId && onMarkRead) onMarkRead(planId)
@@ -331,6 +375,29 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
         bookName={currentBook}
         chapter={currentChapter}
       />
+
+      {/* Auto-scroll controls */}
+      <div className="autoscroll-bar">
+        <button
+          className={`autoscroll-btn ${autoScroll ? 'active' : ''}`}
+          onClick={() => setAutoScroll(v => !v)}
+          title={autoScroll ? 'Stop auto-scroll' : 'Start auto-scroll'}
+        >
+          <ScrollText size={16} />
+          <span>{autoScroll ? 'Scrolling…' : 'Auto-scroll'}</span>
+        </button>
+        <input
+          type="range"
+          className="autoscroll-slider"
+          min="0.25"
+          max="4"
+          step="0.05"
+          value={scrollSpeed}
+          onChange={e => handleScrollSpeedChange(e.target.value)}
+          title={`Scroll speed: ${scrollSpeed.toFixed(2)}×`}
+        />
+        <span className="autoscroll-speed">{scrollSpeed.toFixed(1)}×</span>
+      </div>
 
       <div className="reader-content" ref={contentRef}>
         <div className="reader-reference">{chapterObj?.reference}</div>

@@ -1066,6 +1066,48 @@ input, textarea { font-family: inherit; color: inherit; }
 .completion-continue-btn:hover { color: var(--text); }
 
 /* ===== Audio Player ===== */
+/* ── Auto-scroll bar ───────────────────────────────────────── */
+.autoscroll-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--header-bg);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.autoscroll-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-muted, #888);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.autoscroll-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.autoscroll-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+  cursor: pointer;
+}
+.autoscroll-speed {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  min-width: 2.2rem;
+  text-align: right;
+}
+
 .audio-player {
   background: var(--header-bg);
   border-bottom: 1px solid rgba(255,255,255,0.08);
