@@ -386,17 +386,21 @@ export default function Reader({ scriptureId, book, chapter, prefs, todayAssignm
           <ScrollText size={16} />
           <span>{autoScroll ? 'Scrolling…' : 'Auto-scroll'}</span>
         </button>
-        <input
-          type="range"
-          className="autoscroll-slider"
-          min="0.25"
-          max="4"
-          step="0.05"
-          value={scrollSpeed}
-          onChange={e => handleScrollSpeedChange(e.target.value)}
-          title={`Scroll speed: ${scrollSpeed.toFixed(2)}×`}
-        />
-        <span className="autoscroll-speed">{scrollSpeed.toFixed(1)}×</span>
+        <div className="autoscroll-speed-control">
+          <button
+            className="autoscroll-step-btn"
+            onClick={() => handleScrollSpeedChange(Math.max(0.25, scrollSpeed - 0.25).toString())}
+            disabled={scrollSpeed <= 0.25}
+            title="Slower"
+          >−</button>
+          <span className="autoscroll-speed">{scrollSpeed.toFixed(2)}×</span>
+          <button
+            className="autoscroll-step-btn"
+            onClick={() => handleScrollSpeedChange(Math.min(4, scrollSpeed + 0.25).toString())}
+            disabled={scrollSpeed >= 4}
+            title="Faster"
+          >+</button>
+        </div>
       </div>
 
       <div className="reader-content" ref={contentRef}>
