@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { SCRIPTURE_BOOKS, buildReadingPlan } from '../data/scriptureIndex'
+import { SCRIPTURE_BOOKS, buildReadingPlan, READING_SPEEDS, calcReadingTime } from '../data/scriptureIndex'
 import { Flame, CheckCircle2, Circle, ChevronRight, Plus, TrendingUp, Bookmark } from 'lucide-react'
 
 function getStreak(days) {
@@ -185,7 +185,17 @@ export default function Home({ plans, activePlan, activePlanId, setActivePlanId,
                 )
               })}
             </div>
-            <div className="today-meta">{todaysAssignment.verses} verses</div>
+            <div className="today-meta">
+              {todaysAssignment.verses} verses
+              {(() => {
+                const speed = READING_SPEEDS.find(s => s.key === (activePlan.speedKey || 'average'))
+                const mins = calcReadingTime(todaysAssignment.verses, activePlan.scriptureId, speed.wpm)
+                const rounded = mins < 1 ? '< 1 min' : mins < 60
+                  ? `~${Math.round(mins)} min`
+                  : `~${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m`
+                return <span className="today-meta-time"> · {rounded}</span>
+              })()}
+            </div>
 
             <button
               className={`mark-read-btn ${readToday ? 'done' : ''}`}

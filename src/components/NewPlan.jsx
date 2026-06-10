@@ -113,6 +113,7 @@ export default function NewPlan({ initialPlan, onSave, onCancel }) {
       scriptureId,
       totalDays,
       weeks: Math.round(totalDays / 7),
+      speedKey,
     })
   }
 
