@@ -34,10 +34,8 @@ export default async function handler() {
   const sends = [];
 
   for (const sub of subscriptions || []) {
-    const localTime = getLocalTime(now, sub.timezone);
-
     for (const reminder of sub.reminders || []) {
-      if (reminder.time !== localTime) continue;
+      if (!isWithinWindow(now, reminder.time, sub.timezone)) continue;
 
       const pushSub = {
         endpoint: sub.endpoint,
@@ -71,20 +69,34 @@ export default async function handler() {
   return new Response('ok');
 }
 
-function getLocalTime(utcDate, timezone) {
+/**
+ * Returns true if reminderTime (HH:MM) falls within the past 5-minute window.
+ * Handles the case where the scheduler fires every 5 min but reminder times
+ * can be set to any minute — without this, only :00/:05/:10... times ever fire.
+ */
+function isWithinWindow(utcNow, reminderTime, timezone) {
   try {
+    // Get current local HH:MM in user's timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     });
-    const parts = formatter.formatToParts(utcDate);
-    const hour = parts.find((p) => p.type === 'hour')?.value ?? '00';
-    const minute = parts.find((p) => p.type === 'minute')?.value ?? '00';
-    return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+    const parts = formatter.formatToParts(utcNow);
+    const nowH = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0');
+    const nowM = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0');
+    const nowTotal = nowH * 60 + nowM;
+
+    const [rH, rM] = reminderTime.split(':').map(Number);
+    const reminderTotal = rH * 60 + rM;
+
+    // Fire if reminder time falls in (nowTotal-5, nowTotal] — i.e. within the last 5 minutes
+    // Handle midnight rollover (e.g. window spanning 23:58–00:02)
+    const diff = (nowTotal - reminderTotal + 1440) % 1440;
+    return diff >= 0 && diff < 5;
   } catch {
-    return '99:99';
+    return false;
   }
 }
 
