@@ -81,7 +81,7 @@ function isWithinWindow(utcNow, reminderTime, timezone) {
       timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hourCycle: 'h23', // hour12:false yields "24" at midnight, breaking 00:XX reminders
     });
     const parts = formatter.formatToParts(utcNow);
     const nowH = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0');

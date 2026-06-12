@@ -8,7 +8,9 @@ import Preferences from './components/Preferences'
 import NewPlan from './components/NewPlan'
 import SplashScreen from './components/SplashScreen'
 import { BookOpen, BookText, List, BookMarked, Settings2 } from 'lucide-react'
-import { buildReadingPlan } from './data/scriptureIndex'
+import { getTodaysAssignment } from './data/scriptureIndex'
+import { localDateKey } from './lib/dates'
+import { syncScripturePushSubscription } from './lib/pushSubscription'
 import './index.css'
 
 export default function App() {
@@ -35,13 +37,26 @@ export default function App() {
     document.documentElement.setAttribute('data-font', fontFamily)
   }, [fontFamily])
 
+  // Re-sync the push subscription on every launch. Enabling the toggle is the
+  // only other place this happens, so a failed or pre-Supabase enablement would
+  // otherwise leave the device permanently unsubscribed from reminders.
+  useEffect(() => {
+    if (
+      localStorage.getItem('st_notifEnabled') === 'true' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      syncScripturePushSubscription(localStorage.getItem('st_reminderTime') || '07:00')
+    }
+  }, [])
+
   function openReader(scriptureId, book, chapter) {
     setReaderState({ scriptureId, book, chapter })
     setTab('reader')
   }
 
   function markTodayRead(planId) {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDateKey()
     setReadDays(prev => {
       const days = prev[planId] || []
       if (days.includes(today)) return prev
@@ -102,14 +117,8 @@ export default function App() {
   // Compute today's assignment for the active plan so the Reader can track goal progress
   const todayAssignment = useMemo(() => {
     if (!activePlan) return null
-    const start = new Date(activePlan.createdAt)
-    start.setHours(0, 0, 0, 0)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const dayIdx = Math.floor((today - start) / 86400000)
-    const plan = buildReadingPlan(activePlan.scriptureId, activePlan.totalDays)
-    return plan.days[Math.min(dayIdx, plan.days.length - 1)] || null
-  }, [activePlan])
+    return getTodaysAssignment(activePlan, activeBookmark)
+  }, [activePlan, activeBookmark])
 
   if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />
 

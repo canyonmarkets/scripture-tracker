@@ -178,6 +178,46 @@ export function getChapterList(scriptureId) {
   return list
 }
 
+// Zero-based day index of the plan: 0 on creation day, 1 the next day, etc.
+export function getPlanDayIndex(plan) {
+  const start = new Date(plan.createdAt)
+  start.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.floor((today - start) / 86400000)
+}
+
+// Today's assignment, recalibrated from the reader's bookmark. The bookmark is
+// the next chapter to read, so everything from it onward is redistributed over
+// the days left in the plan — reading ahead (or falling behind) adjusts the
+// daily load instead of repeating the original calendar's chapters.
+export function getTodaysAssignment(plan, bookmark) {
+  const dayIdx = getPlanDayIndex(plan)
+  if (dayIdx >= plan.totalDays) return null // plan period is over
+
+  const staticPlan = buildReadingPlan(plan.scriptureId, plan.totalDays)
+  const fallback = staticPlan.days[dayIdx] || null
+  if (!bookmark) return fallback
+
+  const chapters = getChapterList(plan.scriptureId)
+  const bIdx = chapters.findIndex(c => c.book === bookmark.book && c.chapter === bookmark.chapter)
+  if (bIdx === -1) return fallback
+
+  const remaining = chapters.slice(bIdx)
+  const remainingVerses = remaining.reduce((t, c) => t + c.verseCount, 0)
+  const remainingDays = Math.max(1, plan.totalDays - dayIdx)
+  const versesPerDay = Math.ceil(remainingVerses / remainingDays)
+
+  const refs = []
+  let verses = 0
+  for (const ch of remaining) {
+    refs.push(ch.ref)
+    verses += ch.verseCount
+    if (verses >= versesPerDay) break
+  }
+  return { chapters: refs, verses }
+}
+
 export function buildReadingPlan(scriptureId, totalDays) {
   const chapters = getChapterList(scriptureId)
   const totalVerses = chapters.reduce((t, c) => t + c.verseCount, 0)

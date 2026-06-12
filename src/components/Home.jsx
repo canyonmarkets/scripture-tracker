@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { SCRIPTURE_BOOKS, buildReadingPlan, READING_SPEEDS, calcReadingTime } from '../data/scriptureIndex'
+import { SCRIPTURE_BOOKS, getTodaysAssignment, getPlanDayIndex, READING_SPEEDS, calcReadingTime } from '../data/scriptureIndex'
+import { localDateKey } from '../lib/dates'
 import { Flame, CheckCircle2, Circle, ChevronRight, Plus, TrendingUp, Bookmark } from 'lucide-react'
 
 function getStreak(days) {
@@ -11,6 +12,7 @@ function getStreak(days) {
   for (const d of sorted) {
     const date = new Date(d + 'T00:00:00')
     const diff = Math.round((check - date) / 86400000)
+    if (diff < 0) continue // stray future-dated entry — ignore, don't kill the streak
     if (diff === 0 || diff === 1) {
       streak++
       check = date
@@ -19,27 +21,14 @@ function getStreak(days) {
   return streak
 }
 
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function getDayOfPlan(plan) {
-  const start = new Date(plan.createdAt)
-  start.setHours(0, 0, 0, 0)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.floor((today - start) / 86400000)
-}
-
 export default function Home({ plans, activePlan, activePlanId, setActivePlanId, readDays, bookmark, onMarkRead, onOpenReader, onNewPlan }) {
-  const today = getTodayKey()
+  const today = localDateKey()
 
   const planData = useMemo(() => {
     if (!activePlan) return null
-    const readingPlan = buildReadingPlan(activePlan.scriptureId, activePlan.totalDays)
     const days = readDays[activePlan.id] || []
-    const dayIdx = getDayOfPlan(activePlan)
-    let todaysAssignment = readingPlan.days[dayIdx] || null
+    const dayIdx = getPlanDayIndex(activePlan)
+    const todaysAssignment = getTodaysAssignment(activePlan, bookmark)
     const daysRead = days.length
     const totalDays = activePlan.totalDays
     const pct = Math.min(100, Math.round((daysRead / totalDays) * 100))
@@ -47,28 +36,7 @@ export default function Home({ plans, activePlan, activePlanId, setActivePlanId,
     const readToday = days.includes(today)
     const scripture = SCRIPTURE_BOOKS.find(s => s.id === activePlan.scriptureId)
 
-    // If a bookmark exists, filter today's chapters to only those at or after the bookmark
-    if (todaysAssignment && bookmark) {
-      const bookmarkRef = `${bookmark.book} ${bookmark.chapter}`
-      // Build a flat ordered list of all chapter refs across the whole plan
-      const allChapters = readingPlan.days.flatMap(d => d.chapters)
-      const bookmarkIdx = allChapters.indexOf(bookmarkRef)
-      if (bookmarkIdx !== -1) {
-        const filtered = todaysAssignment.chapters.filter(ch => allChapters.indexOf(ch) >= bookmarkIdx)
-        if (filtered.length !== todaysAssignment.chapters.length) {
-          // Recalculate verse count for the filtered chapters
-          const filteredVerses = filtered.reduce((sum, ch) => {
-            const day = readingPlan.days.find(d => d.chapters.includes(ch))
-            if (!day) return sum
-            // Approximate: distribute day's verses evenly across its chapters
-            return sum + Math.round(day.verses / day.chapters.length)
-          }, 0)
-          todaysAssignment = { chapters: filtered, verses: filteredVerses }
-        }
-      }
-    }
-
-    return { readingPlan, todaysAssignment, daysRead, totalDays, pct, streak, readToday, scripture, dayIdx }
+    return { todaysAssignment, daysRead, totalDays, pct, streak, readToday, scripture, dayIdx }
   }, [activePlan, readDays, today, bookmark])
 
   if (plans.length === 0) {
@@ -237,10 +205,10 @@ function CalendarHeatmap({ readDays, totalDays, startDate }) {
     for (let i = 0; i < Math.min(totalDays, 84); i++) {
       const d = new Date(start)
       d.setDate(d.getDate() + i)
-      const key = d.toISOString().slice(0, 10)
+      const key = localDateKey(d)
       const isPast = d <= today
       const isRead = set.has(key)
-      result.push({ key, isPast, isRead, isToday: key === today.toISOString().slice(0, 10) })
+      result.push({ key, isPast, isRead, isToday: key === localDateKey(today) })
     }
     return result
   }, [readDays, totalDays, startDate])
