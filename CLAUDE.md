@@ -8,7 +8,7 @@ track streak/history, optional audio playback and daily push reminders.
 
 **Live URL:** https://scripture-tracker.netlify.app
 **GitHub:** https://github.com/canyonmarkets/scripture-tracker
-**Local path:** C:\Users\jeffm\Documents\CLAUDE\scripture-tracker
+**Local path:** C:\Users\jeffm\Documents\CLAUDE\PERSONAL & GCU PROJECTS\scripture-tracker
 
 ## Deploy Workflow
 Jeff's rule: run `npm run dev`, verify changes in the browser locally FIRST, batch all
@@ -114,6 +114,9 @@ clips the FIRST character of a paste:
   Healthy: `Scripture reminders: checked N devices, sent M notifications` every 5 min.
 - Reminder enable/sync status surfaces in-app: Prefs → "notif sync: ok" (or the error reason).
 
+## ⚠️ Open Item — VITE_VAPID_PUBLIC_KEY Missing on Netlify
+`VITE_VAPID_PUBLIC_KEY` (the build-time baked key) may not be set on Netlify, which means the client-side push subscription never gets the VAPID public key → no 'scripture' rows in Supabase → reminders never fire. If reminders stop working after a redeploy, check this env var first. Fix: `netlify env:set VITE_VAPID_PUBLIC_KEY <key>` then trigger a redeploy. Value is in `.env.local`.
+
 ## Status as of 2026-06-12
 - Date fix + migration, bookmark recalibration, and launch re-sync are deployed to production.
 - GRIT reminders confirmed firing end-to-end (9:00 AM live test).
@@ -128,3 +131,10 @@ clips the FIRST character of a paste:
   function that doesn't run under plain Vite. It works on the deployed site.
 - Scripture text JSON comes from raw.githubusercontent.com (bcbooks/scriptures-json),
   cached by the service worker for 90 days.
+
+
+---
+## LOCATION (re-indexed 2026-07-23)
+This project lives at: `C:\Users\jeffm\Documents\CLAUDE\PERSONAL\scripture-tracker`
+
+This is the FINAL post-reorg home. The workspace root is C:\Users\jeffm\Documents\CLAUDE with four buckets (CANYON-APTS, CANYON-HQ, CANYON-MARKETS, PERSONAL) plus an OLD archive of the pre-reorg tree. The D:\COWORK CLEANUP staging area is GONE. Any older path mentioned elsewhere in this document is STALE — trust this note.
